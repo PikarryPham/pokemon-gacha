@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Poké Gacha Picker
 
-## Getting Started
+Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Người chơi nhập 1–20 item, quay thành 3 batch (mỗi batch từ 3,000¥ đến dưới 5,000¥) rồi chọn 1 batch.
 
-First, run the development server:
+> 👤 **Người chơi / người không rành kỹ thuật:** đọc [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) (hướng dẫn từng bước, có hình). README này dành cho người phát triển và triển khai web.
+
+**Stack:** Next.js 16 (App Router) · Tailwind CSS 4 · Drizzle ORM · Postgres (Neon) · PGlite khi dev · Vitest.
+
+## Luật chơi (đã cài đặt)
+
+| Luật | Chi tiết |
+|---|---|
+| Tài khoản | Username bắt buộc, email tùy chọn. Mặc định hiện form đăng nhập, có link sang đăng ký; đăng ký xong chuyển về đăng nhập với username điền sẵn. Đăng nhập bằng username hoặc email. Không có quên mật khẩu. Form dùng Server Actions nên vẫn chạy khi JS chưa tải. |
+| Danh sách item | 1–20 item. Giá 1–4,999¥ (item ≥ 5,000¥ không bao giờ quay trúng được). Số lượng 1–99. Link phải là http(s). Danh sách lưu nháp trên trình duyệt; bấm **Bắt đầu quay** mới ghi DB và khóa lại. |
+| Chống trùng | Hai item trùng khi cùng **tên + link + category** (tên/link bỏ khoảng trắng thừa, không phân biệt hoa thường; xem `itemKey()`). Chặn ở form thêm/sửa, ở import (trùng trong file hoặc trùng danh sách hiện có) và ở server (`itemListSchema`). |
+| Import | `.csv`/`.txt`, dòng đầu `name,price,category,url,quantity`. Sai 1 dòng (kể cả dòng trùng) là từ chối cả file. File mẫu tải được trong app hoặc ở [docs/huong-dan/mau-danh-sach.csv](docs/huong-dan/mau-danh-sach.csv). |
+| Số lượng | = số lần tối đa item được trúng **trong một batch**, **reset mỗi batch**. Item hết số lượng thì không quay được nữa trong batch đó. |
+| Quay | Server chọn kết quả bằng `crypto.randomInt`. Pool = item **còn số lượng** và **vừa ngân sách** (tổng + giá < 5,000¥). Mỗi đơn vị số lượng còn lại là một **phiếu**: xác suất trúng item = số lượng còn lại / tổng số phiếu (`ticketCount` / `itemAtTicket` trong `rules.ts`). Màn quay hiển thị "Còn x/y" và % trúng. |
+| Chốt batch | ≥ 3,000¥: được **chốt** (ở giỏ hoặc ngay trên popup kết quả), hoặc quay tiếp nếu còn item quay được. < 3,000¥: chỉ **dừng sớm** được khi xác nhận. Cần quay ít nhất 1 lần. |
+| Kết thúc | Sau 3 batch thì chọn 1 batch. Tài khoản khóa tính năng quay, chỉ còn xem Lịch sử, Cài đặt, Đăng xuất. |
+| Chơi tiếp | Mỗi lần quay lưu DB ngay, nên thoát ra hoặc F5 đều vào lại đúng chỗ và không đổi được kết quả. |
+
+## Chạy local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # tự migrate DB rồi chạy http://localhost:3000
+npm test           # unit + integration test (PGlite in-memory)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Không cần cài Postgres: khi không có `DATABASE_URL`, app dùng PGlite lưu ở `./.data/pglite` (đổi bằng biến `PGLITE_DIR`). Xóa thư mục này để reset dữ liệu. PGlite chỉ cho **một process** mở cùng lúc: đừng chạy `npm run build`/`db:migrate` khi `npm run dev` đang chạy trên cùng thư mục dữ liệu.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Muốn thử trên điện thoại cùng mạng wifi: mở `http://<IP-máy-tính>:3000` (dev server đã cho phép IP mạng nội bộ `10.*`, `192.168.*`, `172.*` trong `next.config.ts`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ảnh trong hướng dẫn sử dụng nằm ở `docs/huong-dan/`. Khi đổi giao diện, nhớ chụp lại cho khớp.
 
-## Learn More
+## Deploy public (Vercel + Neon, miễn phí)
 
-To learn more about Next.js, take a look at the following resources:
+Sau khi deploy, nhớ thay `https://<tên-web>.vercel.app` trong [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) bằng link thật trước khi gửi cho người chơi.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Tạo database:** đăng ký [neon.tech](https://neon.tech), tạo project (region gần người chơi, ví dụ Singapore/Tokyo), copy connection string **pooled**.
+2. **Đẩy code lên GitHub** (repo private hoặc public đều được).
+3. **Vercel:** [vercel.com](https://vercel.com), chọn *Add New → Project*, import repo. Thêm Environment Variables:
+   - `DATABASE_URL`: connection string của Neon
+   - `SESSION_SECRET`: chuỗi ngẫu nhiên dài, tạo bằng `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`
+4. Bấm **Deploy**. Lệnh `npm run build` tự chạy migration lên Neon trước khi build. Xong sẽ có link `https://<tên-project>.vercel.app` để chia sẻ.
 
-## Deploy on Vercel
+Mỗi lần push lên nhánh chính, Vercel tự deploy lại. Khi đổi schema thì sửa `src/lib/db/schema.ts`, chạy `npm run db:generate` và commit thư mục `drizzle/`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Cấu trúc
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/lib/rules.ts        luật chơi & hằng số (3000/5000/3 batch/20 item), số lượng theo batch, bốc phiếu
+src/lib/game.ts         logic server: start / spin / closeBatch / chooseBatch (transaction + khóa dòng)
+src/lib/csv.ts          đọc & kiểm tra file import
+src/lib/schemas.ts      zod schema dùng chung client/server, chống trùng item
+src/lib/session.ts      cookie phiên (JWT HS256, httpOnly)
+src/app/api/**          API routes (game, account, logout)
+src/app/(auth)/**       đăng nhập / đăng ký (Server Actions trong actions.ts)
+src/app/(app)/**        setup · play · summary · history · settings
+tests/                  vitest
+HUONG-DAN-SU-DUNG.md    hướng dẫn cho người chơi (ảnh ở docs/huong-dan/)
+```
+
+## Giới hạn đã biết
+
+- Chưa giới hạn số lần đăng nhập sai (bcrypt làm chậm brute-force, nhưng chưa rate-limit).
+- Không có trang admin. Muốn reset một tài khoản thì xóa dòng trong bảng `games` (cascade xóa items/batches/spins).
+- Icon là emoji ngẫu nhiên (không dùng hình Pokémon chính thức để tránh vấn đề bản quyền).
