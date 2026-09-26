@@ -4,7 +4,7 @@ Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Ng
 
 > 👤 **Người chơi / người không rành kỹ thuật:** đọc [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) (hướng dẫn từng bước, có hình). README này dành cho người phát triển và triển khai web.
 
-**Stack:** Next.js 16 (App Router) · Tailwind CSS 4 · Drizzle ORM · Postgres (Neon) · PGlite khi dev · Vitest.
+**Stack:** Next.js 16 (App Router) · Tailwind CSS 4 · Drizzle ORM · Postgres (Neon) · PGlite khi dev · Tesseract.js (quét ảnh trên trình duyệt) · Vitest.
 
 ## Luật chơi (đã cài đặt)
 
@@ -13,6 +13,7 @@ Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Ng
 | Tài khoản | Username bắt buộc, email tùy chọn. Mặc định hiện form đăng nhập, có link sang đăng ký; đăng ký xong chuyển về đăng nhập với username điền sẵn. Đăng nhập bằng username hoặc email. Không có quên mật khẩu. Form dùng Server Actions nên vẫn chạy khi JS chưa tải. |
 | Danh sách item | 1–100 item. Giá 1–4,999¥ (item ≥ 5,000¥ không bao giờ quay trúng được). Số lượng 1–99. Link phải là http(s). Danh sách lưu nháp trên trình duyệt; bấm **Bắt đầu quay** mới ghi DB và khóa lại. |
 | Chống trùng | Hai item trùng khi cùng **tên + link + category** (tên/link bỏ khoảng trắng thừa, không phân biệt hoa thường; xem `itemKey()`). Chặn ở form thêm/sửa, ở import (trùng trong file hoặc trùng danh sách hiện có) và ở server (`itemListSchema`). |
+| Quét ảnh | Chọn 1–10 ảnh/lần (≤ 10MB/ảnh). OCR bằng **Tesseract.js ngay trên trình duyệt** (jpn + eng): miễn phí, không cần key, ảnh không lên server. `parseScannedText()` đoán tên/giá/link/category (gộp chữ Nhật bị tách, sửa `\1.650` → 1650, `.cojp` → `.co.jp`); kết quả vào bảng xem lại, qua cùng luật kiểm tra + chống trùng như form rồi mới thêm. Mỗi ảnh = 1 món. |
 | Import | `.csv`/`.txt`, dòng đầu `name,price,category,url,quantity`. Sai 1 dòng (kể cả dòng trùng) là từ chối cả file. File mẫu tải được trong app hoặc ở [docs/huong-dan/mau-danh-sach.csv](docs/huong-dan/mau-danh-sach.csv). |
 | Số lượng | = số lần tối đa item được trúng **trong một batch**, **reset mỗi batch**. Item hết số lượng thì không quay được nữa trong batch đó. |
 | Quay | Server chọn kết quả bằng `crypto.randomInt`. Pool = item **còn số lượng** và **vừa ngân sách** (tổng + giá < 5,000¥). Mỗi đơn vị số lượng còn lại là một **phiếu**: xác suất trúng item = số lượng còn lại / tổng số phiếu (`ticketCount` / `itemAtTicket` trong `rules.ts`). Màn quay hiển thị "Còn x/y" và % trúng. |
@@ -56,6 +57,9 @@ Mỗi lần push lên nhánh chính, Vercel tự deploy lại. Khi đổi schema
 src/lib/rules.ts        luật chơi & hằng số (3000/5000/3 batch/100 item), số lượng theo batch, bốc phiếu
 src/lib/game.ts         logic server: start / spin / closeBatch / chooseBatch (transaction + khóa dòng)
 src/lib/csv.ts          đọc & kiểm tra file import
+src/lib/scan-parse.ts   tách tên/giá/link/category từ chữ OCR
+src/lib/item-form.ts    kiểm tra form item (dùng chung form tay + bảng quét ảnh)
+src/components/use-scanner.ts, scan-review.tsx   quét ảnh (Tesseract.js) + bảng xem lại
 src/lib/schemas.ts      zod schema dùng chung client/server, chống trùng item
 src/lib/session.ts      cookie phiên (JWT HS256, httpOnly)
 src/app/api/**          API routes (game, account, logout)
@@ -66,6 +70,8 @@ HUONG-DAN-SU-DUNG.md    hướng dẫn cho người chơi (ảnh ở docs/huong-
 ```
 
 ## Giới hạn đã biết
+
+- Quét ảnh: Tesseract.js tải worker, core WASM và dữ liệu chữ (~vài MB) từ `cdn.jsdelivr.net` ở lần quét đầu, trình duyệt cache cho lần sau. Độ chính xác phụ thuộc chất lượng ảnh; ảnh nhiều sản phẩm chỉ nhận 1 món. Console có thể in `Warning: Parameter not found: ...` từ dữ liệu tiếng Nhật: vô hại.
 
 - Chưa giới hạn số lần đăng nhập sai (bcrypt làm chậm brute-force, nhưng chưa rate-limit).
 - Không có trang admin. Muốn reset một tài khoản thì xóa dòng trong bảng `games` (cascade xóa items/batches/spins).

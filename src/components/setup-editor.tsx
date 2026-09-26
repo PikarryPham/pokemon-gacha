@@ -5,15 +5,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { postJson } from "@/lib/client";
 import { CSV_HEADER, CSV_TEMPLATE, MAX_IMPORT_BYTES, parseItemsFile } from "@/lib/csv";
 import { formatYen } from "@/lib/format";
-import { BATCH_MAX_JPY, BATCH_MIN_JPY, CATEGORIES, MAX_ITEMS, MAX_ITEM_PRICE, MAX_QUANTITY, type Category } from "@/lib/rules";
-import { DUPLICATE_HINT, findDuplicates, itemKey, itemSchema, type ItemInput } from "@/lib/schemas";
+import { BATCH_MAX_JPY, BATCH_MIN_JPY, CATEGORIES, MAX_ITEMS, MAX_ITEM_PRICE, MAX_QUANTITY } from "@/lib/rules";
+import { EMPTY_ITEM_FORM as EMPTY_FORM, validateItemForm, type ItemFieldErrors as FieldErrors, type ItemFormState as FormState } from "@/lib/item-form";
+import { DUPLICATE_HINT, findDuplicates, type ItemInput } from "@/lib/schemas";
+import { ScanReview } from "./scan-review";
 import { Alert, Button, Card, Field, inputClass, Modal } from "./ui";
+import { MAX_SCAN_FILES, useScanner } from "./use-scanner";
 
 type DraftItem = ItemInput & { key: string };
-type FormState = { name: string; price: string; category: Category; url: string; quantity: string };
-type FieldErrors = Partial<Record<"name" | "priceJpy" | "category" | "url" | "quantity", string>>;
-
-const EMPTY_FORM: FormState = { name: "", price: "", category: CATEGORIES[0], url: "", quantity: "1" };
 const newKey = () => Math.random().toString(36).slice(2, 10);
 
 function readDraft(key: string): DraftItem[] {
@@ -39,6 +38,9 @@ export function SetupEditor({ userId }: { userId: number }) {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const scanRef = useRef<HTMLInputElement>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const scanner = useScanner();
   const nameRef = useRef<HTMLInputElement>(null);
 
   // Danh sách chưa lưu DB (yêu cầu), nhưng giữ nháp trong trình duyệt để lỡ đóng tab không mất.
@@ -66,38 +68,31 @@ export function SetupEditor({ userId }: { userId: number }) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const result = itemSchema.safeParse({
-      name: form.name,
-      priceJpy: form.price.trim() === "" ? NaN : Number(form.price),
-      category: form.category,
-      url: form.url,
-      quantity: form.quantity.trim() === "" ? 1 : Number(form.quantity),
-    });
-    if (!result.success) {
-      const errs: FieldErrors = {};
-      for (const issue of result.error.issues) {
-        const k = issue.path[0] as keyof FieldErrors;
-        errs[k] ??= issue.message;
-      }
-      setErrors(errs);
+    const result = validateItemForm(
+      form,
+      items.filter((it) => it.key !== editingKey),
+    );
+    if (!result.ok) {
+      setErrors(result.errors);
       return;
     }
-    const key = itemKey(result.data);
-    const clash = items.find((it) => it.key !== editingKey && itemKey(it) === key);
-    if (clash) {
-      setErrors({ name: `Item này đã có trong danh sách (${DUPLICATE_HINT} với "${clash.name}")` });
-      return;
-    }
+    const item = result.item;
     if (editingKey) {
-      setItems((list) => list.map((it) => (it.key === editingKey ? { ...result.data, key: it.key } : it)));
+      setItems((list) => list.map((it) => (it.key === editingKey ? { ...item, key: it.key } : it)));
       flash("Đã lưu thay đổi");
     } else {
       if (full) return;
-      setItems((list) => [...list, { ...result.data, key: newKey() }]);
-      flash(`Đã thêm "${result.data.name}"`);
+      setItems((list) => [...list, { ...item, key: newKey() }]);
+      flash(`Đã thêm "${item.name}"`);
     }
     resetForm();
     nameRef.current?.focus();
+  }
+
+  /** Thêm các item đã kiểm tra từ bảng quét ảnh. */
+  function addScanned(list: ItemInput[]) {
+    setItems((prev) => [...prev, ...list.map((it) => ({ ...it, key: newKey() }))]);
+    flash(list.length === 1 ? `Đã thêm "${list[0].name}"` : `Đã thêm ${list.length} item từ ảnh`);
   }
 
   function startEdit(it: DraftItem) {
@@ -279,10 +274,43 @@ export function SetupEditor({ userId }: { userId: number }) {
               </div>
             )}
           </div>
+
+          <div className="mt-5 border-t border-ink/10 pt-4">
+            <h3 className="mb-1 text-sm font-extrabold">📷 Quét từ ảnh chụp màn hình</h3>
+            <p className="mb-2 text-xs text-ink/60">
+              Chụp trang sản phẩm (mỗi ảnh 1 món), chọn 1 hoặc nhiều ảnh (tối đa {MAX_SCAN_FILES} ảnh/lần). Web tự đọc tên, giá, link để bạn kiểm tra lại.
+            </p>
+            <Button type="button" variant="secondary" className="text-sm" onClick={() => scanRef.current?.click()} disabled={full}>
+              Chọn ảnh để quét
+            </Button>
+            <input
+              ref={scanRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                setScanError(scanner.addFiles(Array.from(e.target.files ?? [])));
+                e.target.value = "";
+              }}
+            />
+            {scanError && (
+              <div className="mt-3">
+                <Alert>{scanError}</Alert>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Danh sách */}
         <div className="flex flex-col gap-3">
+          <ScanReview
+            rows={scanner.rows}
+            existing={items}
+            onAdd={addScanned}
+            onUpdate={scanner.updateForm}
+            onRemove={scanner.remove}
+          />
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-extrabold">
               Danh sách{" "}
@@ -309,7 +337,7 @@ export function SetupEditor({ userId }: { userId: number }) {
           {items.length === 0 && (
             <div className="rounded-3xl border-2 border-dashed border-ink/15 bg-white/60 p-10 text-center text-ink/50">
               <div className="mb-2 text-4xl">🎁</div>
-              Chưa có item nào. Thêm bằng form bên cạnh hoặc import từ file.
+              Chưa có item nào. Thêm bằng form bên cạnh, import từ file hoặc quét từ ảnh.
             </div>
           )}
 

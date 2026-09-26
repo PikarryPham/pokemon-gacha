@@ -59,7 +59,7 @@ Lần sau bạn đăng nhập bằng **tên tài khoản hoặc email** cùng m�
 
 ## Bước 3: Nhập danh sách quà
 
-Có 2 cách, dùng kết hợp cũng được.
+Có 3 cách, dùng kết hợp cũng được.
 
 ### Cách 1: Nhập từng món
 
@@ -105,6 +105,23 @@ Cách này tiện khi bạn có sẵn danh sách dài.
 > ⚠️ **Chỉ cần 1 dòng sai là cả file bị từ chối.** Web sẽ liệt kê dòng nào sai và sai ở đâu, bạn sửa rồi chọn lại file. Dòng bị trùng nhau, hoặc trùng món đã có trên màn hình, cũng tính là sai.
 
 ![File bị từ chối](docs/huong-dan/06-import-bi-tu-choi.png)
+
+### Cách 3: Quét từ ảnh chụp màn hình
+
+Nếu bạn đang xem món quà trên web Pokémon Center hoặc Starbucks, chỉ cần **chụp màn hình trang sản phẩm**, web sẽ tự đọc tên, giá và link.
+
+1. Chụp màn hình trang sản phẩm, **mỗi ảnh 1 món**. Nên chụp cả **thanh địa chỉ** ở trên cùng để web đọc được link.
+2. Trong khung "Quét từ ảnh chụp màn hình", bấm **"Chọn ảnh để quét"** và chọn 1 hoặc nhiều ảnh (tối đa **10 ảnh mỗi lần**).
+3. Đợi vài giây. Lần đầu tiên hơi lâu vì web phải tải bộ đọc chữ; các lần sau nhanh hơn.
+4. Kết quả hiện trong bảng **"Kết quả quét ảnh"**. **Hãy kiểm tra lại từng món**, vì máy đọc chữ có thể sai:
+   - Sửa tên nếu bị sai chữ, kiểm tra giá, chọn lại category nếu cần.
+   - Nếu ảnh không có thanh địa chỉ, ô link sẽ trống: hãy dán link trang bán vào.
+   - Số lượng mặc định là 1, sửa nếu muốn.
+5. Bấm **"➕ Thêm vào danh sách"** cho từng món, hoặc **"➕ Thêm tất cả món hợp lệ"**. Món nào còn thiếu thông tin hay bị trùng thì sẽ không được thêm, và có chữ đỏ báo lý do.
+
+![Kết quả quét ảnh](docs/huong-dan/18-quet-anh.png)
+
+> 🔒 Ảnh chỉ được xử lý **ngay trên máy của bạn**, không gửi lên server. Tính năng này miễn phí.
 
 ### Sửa hoặc xóa món
 
@@ -215,6 +232,9 @@ Không. Mỗi tài khoản chỉ có 1 lượt gồm 3 batch. Sau khi chọn bat
 
 **Đăng nhập báo "Sai tên tài khoản/email hoặc mật khẩu"?**
 Kiểm tra lại mật khẩu (có phân biệt chữ hoa, chữ thường) và xem có đang bật Caps Lock không. Nếu chắc chắn đúng mà vẫn lỗi, hãy liên hệ người quản lý.
+
+**Quét ảnh đọc sai tên hoặc giá?**
+Máy đọc chữ không hoàn hảo, nhất là với ảnh mờ, chữ nhỏ hoặc nền nhiều hình. Bạn cứ sửa trực tiếp trong bảng kết quả. Mẹo: chụp rõ nét, phóng to phần tên và giá, mỗi ảnh chỉ 1 món. Ảnh có nhiều món cùng lúc sẽ chỉ nhận ra 1 món.
 
 **Import file bị báo lỗi dù nhìn thấy đúng?**
 Hay gặp nhất là: sửa mất dòng tiêu đề; ghi giá kiểu `¥2,500` hoặc `2,500`; gõ sai tên category; hai dòng trùng nhau. Nếu tên có chữ Nhật hay chữ Việt bị lỗi font, hãy lưu lại bằng kiểu **CSV UTF-8**.

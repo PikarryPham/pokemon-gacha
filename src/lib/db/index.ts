@@ -44,7 +44,10 @@ export function openDefaultDb(): Promise<DbHandle> {
   const url = process.env.DATABASE_URL;
   if (url) return openPostgres(url);
   if (process.env.NODE_ENV === "production" && !process.env.ALLOW_PGLITE) {
-    throw new Error("DATABASE_URL chưa được cấu hình");
+    throw new Error(
+      "DATABASE_URL chưa được cấu hình. Trên Vercel: Settings → Environment Variables → thêm DATABASE_URL " +
+        "(tick môi trường Production), rồi Deployments → Redeploy.",
+    );
   }
   return openPglite(process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite"));
 }
