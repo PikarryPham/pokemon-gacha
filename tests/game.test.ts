@@ -128,10 +128,18 @@ describe("game flow", () => {
     expect(again.view.batches[1].spins).toHaveLength(1);
   });
 
+  it("chấp nhận đúng 100 item, mỗi item một kiểu icon", async () => {
+    const u = await newUser();
+    const v = await startGame(h.db, u.id, Array.from({ length: 100 }, (_, i) => item(`I${i}`, 100 + i)));
+    expect(v.items).toHaveLength(100);
+    expect(new Set(v.items.map((i) => i.icon + i.color)).size).toBe(100);
+    expect((await spin(h.db, u.id)).view.batches[0].spins).toHaveLength(1);
+  });
+
   it("từ chối danh sách không hợp lệ", async () => {
     const u = await newUser();
     await expect(startGame(h.db, u.id, [])).rejects.toThrow();
-    await expect(startGame(h.db, u.id, Array.from({ length: 21 }, (_, i) => item(`I${i}`, 100)))).rejects.toThrow();
+    await expect(startGame(h.db, u.id, Array.from({ length: 101 }, (_, i) => item(`I${i}`, 100)))).rejects.toThrow();
     await expect(startGame(h.db, u.id, [item("Too pricey", 5000)])).rejects.toThrow();
     await expect(startGame(h.db, u.id, [item("Dup", 100), item("Dup", 900, 3)])).rejects.toThrow(/trùng/);
     expect((await getGameView(h.db, u.id)).status).toBe("setup");

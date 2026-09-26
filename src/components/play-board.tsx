@@ -23,6 +23,35 @@ import { Alert, Button, Card, Modal } from "./ui";
 
 type CloseMode = "commit" | "early";
 
+const ROULETTE_STEPS = 30;
+
+/** Tỉ lệ trúng dạng phần trăm; dưới 1% ghi "<1%" để không bị hiểu nhầm là 0%. */
+function formatChance(p: number): string {
+  const pct = p * 100;
+  return pct > 0 && pct < 1 ? "<1%" : `${Math.round(pct)}%`;
+}
+
+/**
+ * Thứ tự các thẻ được làm sáng, luôn kết thúc ở `targetId`. Ít thẻ thì chạy vòng tuần tự;
+ * nhiều thẻ (tối đa 100) thì nhảy ngẫu nhiên ~30 bước để mỗi lần quay không kéo dài quá vài giây.
+ */
+function rouletteSequence(ids: number[], targetId: number, reduce: boolean): number[] {
+  const n = ids.length;
+  if (reduce || n === 1) return reduce ? [targetId] : Array.from({ length: 8 }, () => targetId);
+  if (n <= 12) {
+    const loops = Math.max(2, Math.ceil(24 / n));
+    const steps = loops * n + ids.indexOf(targetId);
+    return Array.from({ length: steps + 1 }, (_, s) => ids[s % n]);
+  }
+  const seq: number[] = [];
+  while (seq.length < ROULETTE_STEPS) {
+    const next = ids[Math.floor(Math.random() * n)];
+    if (next !== seq[seq.length - 1] && next !== targetId) seq.push(next);
+  }
+  seq.push(targetId);
+  return seq;
+}
+
 export function PlayBoard({ initialView }: { initialView: GameView }) {
   const router = useRouter();
   const [view, setView] = useState(initialView);
@@ -61,13 +90,12 @@ export function PlayBoard({ initialView }: { initialView: GameView }) {
 
   /** Ô sáng chạy qua các item đủ điều kiện, chậm dần rồi dừng đúng item server đã chọn. */
   async function roulette(ids: number[], targetId: number) {
-    const n = ids.length;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const loops = reduce ? 0 : n === 1 ? 8 : Math.max(2, Math.ceil(24 / n));
-    const steps = loops * n + ids.indexOf(targetId);
-    for (let s = 0; s <= steps; s++) {
-      setHighlight(ids[s % n]);
-      const t = steps === 0 ? 1 : s / steps;
+    const sequence = rouletteSequence(ids, targetId, reduce);
+    const last = sequence.length - 1;
+    for (let s = 0; s <= last; s++) {
+      setHighlight(sequence[s]);
+      const t = last === 0 ? 1 : s / last;
       await sleep(40 + 320 * t ** 3);
     }
     await sleep(350);
@@ -215,7 +243,7 @@ export function PlayBoard({ initialView }: { initialView: GameView }) {
                         <span className="text-poke-red">Vượt ngân sách</span>
                       ) : (
                         <span className="text-poke-blue" title="Cơ hội trúng ở lần quay tới">
-                          🎯 {Math.round((left / tickets) * 100)}%
+                          🎯 {formatChance(left / tickets)}
                         </span>
                       )}
                     </div>

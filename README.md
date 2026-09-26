@@ -1,6 +1,6 @@
 # Poké Gacha Picker
 
-Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Người chơi nhập 1–20 item, quay thành 3 batch (mỗi batch từ 3,000¥ đến dưới 5,000¥) rồi chọn 1 batch.
+Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Người chơi nhập 1–100 item, quay thành 3 batch (mỗi batch từ 3,000¥ đến dưới 5,000¥) rồi chọn 1 batch.
 
 > 👤 **Người chơi / người không rành kỹ thuật:** đọc [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md) (hướng dẫn từng bước, có hình). README này dành cho người phát triển và triển khai web.
 
@@ -11,7 +11,7 @@ Web game quay ngẫu nhiên quà Pokémon Center / Pokémon Starbucks Collab. Ng
 | Luật | Chi tiết |
 |---|---|
 | Tài khoản | Username bắt buộc, email tùy chọn. Mặc định hiện form đăng nhập, có link sang đăng ký; đăng ký xong chuyển về đăng nhập với username điền sẵn. Đăng nhập bằng username hoặc email. Không có quên mật khẩu. Form dùng Server Actions nên vẫn chạy khi JS chưa tải. |
-| Danh sách item | 1–20 item. Giá 1–4,999¥ (item ≥ 5,000¥ không bao giờ quay trúng được). Số lượng 1–99. Link phải là http(s). Danh sách lưu nháp trên trình duyệt; bấm **Bắt đầu quay** mới ghi DB và khóa lại. |
+| Danh sách item | 1–100 item. Giá 1–4,999¥ (item ≥ 5,000¥ không bao giờ quay trúng được). Số lượng 1–99. Link phải là http(s). Danh sách lưu nháp trên trình duyệt; bấm **Bắt đầu quay** mới ghi DB và khóa lại. |
 | Chống trùng | Hai item trùng khi cùng **tên + link + category** (tên/link bỏ khoảng trắng thừa, không phân biệt hoa thường; xem `itemKey()`). Chặn ở form thêm/sửa, ở import (trùng trong file hoặc trùng danh sách hiện có) và ở server (`itemListSchema`). |
 | Import | `.csv`/`.txt`, dòng đầu `name,price,category,url,quantity`. Sai 1 dòng (kể cả dòng trùng) là từ chối cả file. File mẫu tải được trong app hoặc ở [docs/huong-dan/mau-danh-sach.csv](docs/huong-dan/mau-danh-sach.csv). |
 | Số lượng | = số lần tối đa item được trúng **trong một batch**, **reset mỗi batch**. Item hết số lượng thì không quay được nữa trong batch đó. |
@@ -32,6 +32,8 @@ Không cần cài Postgres: khi không có `DATABASE_URL`, app dùng PGlite lưu
 
 Muốn thử trên điện thoại cùng mạng wifi: mở `http://<IP-máy-tính>:3000` (dev server đã cho phép IP mạng nội bộ `10.*`, `192.168.*`, `172.*` trong `next.config.ts`).
 
+File test nhanh: [docs/test-data/test-10-items.csv](docs/test-data/test-10-items.csv) (10 item hợp lệ, đủ 2 category, có tên chứa dấu phẩy và tên tiếng Nhật), upload ở màn nhập item.
+
 Ảnh trong hướng dẫn sử dụng nằm ở `docs/huong-dan/`. Khi đổi giao diện, nhớ chụp lại cho khớp.
 
 ## Deploy public (Vercel + Neon, miễn phí)
@@ -51,7 +53,7 @@ Mỗi lần push lên nhánh chính, Vercel tự deploy lại. Khi đổi schema
 ## Cấu trúc
 
 ```
-src/lib/rules.ts        luật chơi & hằng số (3000/5000/3 batch/20 item), số lượng theo batch, bốc phiếu
+src/lib/rules.ts        luật chơi & hằng số (3000/5000/3 batch/100 item), số lượng theo batch, bốc phiếu
 src/lib/game.ts         logic server: start / spin / closeBatch / chooseBatch (transaction + khóa dòng)
 src/lib/csv.ts          đọc & kiểm tra file import
 src/lib/schemas.ts      zod schema dùng chung client/server, chống trùng item

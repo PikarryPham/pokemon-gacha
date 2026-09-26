@@ -20,7 +20,7 @@ Mẹo: sau khi mở, hãy **lưu trang vào Bookmark**, hoặc trên điện tho
 
 | | |
 |---|---|
-| 🎁 **Danh sách quà** | Bạn nhập từ **1 đến 20 món**. Mỗi món gồm: tên, giá (yên), loại, link bán, số lượng. |
+| 🎁 **Danh sách quà** | Bạn nhập từ **1 đến 100 món**. Mỗi món gồm: tên, giá (yên), loại, link bán, số lượng. |
 | 🚫 **Không trùng** | Không được có 2 món cùng **tên + link + loại**. |
 | 🧺 **Batch** | Mỗi lần quay trúng 1 món và món đó vào giỏ. Một giỏ hợp lệ có tổng tiền **từ 3,000¥ đến dưới 5,000¥**. |
 | 📦 **Số lượng** | Một món chỉ trúng được **tối đa bằng số lượng** bạn nhập, trong **mỗi** giỏ. Sang giỏ mới thì số lượng đầy lại. |
@@ -108,7 +108,7 @@ Cách này tiện khi bạn có sẵn danh sách dài.
 
 ### Sửa hoặc xóa món
 
-Mỗi món trong danh sách có nút **✏️ Sửa** và **🗑 Xóa**. Góc trên có bộ đếm, ví dụ **8/20**, cho biết bạn đã nhập bao nhiêu món.
+Mỗi món trong danh sách có nút **✏️ Sửa** và **🗑 Xóa**. Góc trên có bộ đếm, ví dụ **8/100**, cho biết bạn đã nhập bao nhiêu món.
 
 ![Danh sách quà](docs/huong-dan/07-danh-sach.png)
 

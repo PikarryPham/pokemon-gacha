@@ -4,7 +4,7 @@ export const CATEGORIES = ["Pokemon Center", "Pokemon Starbucks Collab"] as cons
 export type Category = (typeof CATEGORIES)[number];
 
 export const MIN_ITEMS = 1;
-export const MAX_ITEMS = 20;
+export const MAX_ITEMS = 100;
 
 /** Tổng batch phải >= mức này mới được "chốt" bình thường. */
 export const BATCH_MIN_JPY = 3000;

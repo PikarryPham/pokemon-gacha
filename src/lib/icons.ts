@@ -1,7 +1,9 @@
 // Icon chung (emoji + màu nền) thay cho hình Pokémon chính thức, tránh vấn đề bản quyền khi public.
+// Số icon phải là bội số của số màu để công thức ghép cặp trong assignIcons không bị trùng.
 const ICONS = [
   "⚡", "🔥", "💧", "🍃", "🌙", "⭐", "🎀", "🍓", "🧸", "🎁", "🍩", "🌸",
   "❄️", "🪨", "👻", "🐉", "🍀", "🎈", "🧁", "🌈", "🍭", "🔮", "🐾", "☕",
+  "🍙", "🍑", "🌻", "🦋", "🐚", "🍄", "🎵", "💎", "🪁", "🍒", "🌊", "🎂",
 ];
 const COLORS = [
   "#FDE68A", "#FECACA", "#BFDBFE", "#BBF7D0", "#DDD6FE", "#FBCFE8",
@@ -17,12 +19,15 @@ function shuffle<T>(arr: T[], random: () => number): T[] {
   return a;
 }
 
-/** Gán icon ngẫu nhiên, không trùng nhau (tối đa 24 item). */
+/**
+ * Gán icon ngẫu nhiên. 36 item đầu có emoji khác nhau; từ item 37 trở đi emoji lặp lại
+ * nhưng đổi màu nền, nên mỗi cặp (emoji, màu) vẫn là duy nhất (tối đa 36 × 12 = 432 item).
+ */
 export function assignIcons(count: number, random: () => number = Math.random) {
   const icons = shuffle(ICONS, random);
   const colors = shuffle(COLORS, random);
   return Array.from({ length: count }, (_, i) => ({
     icon: icons[i % icons.length],
-    color: colors[i % colors.length],
+    color: colors[(i + Math.floor(i / icons.length)) % colors.length],
   }));
 }

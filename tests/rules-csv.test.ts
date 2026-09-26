@@ -35,9 +35,10 @@ describe("rules", () => {
 });
 
 describe("assignIcons", () => {
-  it("20 item có 20 icon khác nhau", () => {
-    const looks = assignIcons(20);
-    expect(new Set(looks.map((l) => l.icon)).size).toBe(20);
+  it("36 item đầu có emoji khác nhau; 100 item có 100 cặp (emoji, màu) khác nhau", () => {
+    const looks = assignIcons(100);
+    expect(new Set(looks.slice(0, 36).map((l) => l.icon)).size).toBe(36);
+    expect(new Set(looks.map((l) => l.icon + l.color)).size).toBe(100);
   });
 });
 
@@ -112,9 +113,11 @@ describe("parseItemsFile", () => {
     expect(r2).toEqual({ ok: false, errors: [expect.stringMatching(/^Dòng 3: trùng với item "B" đã có/)] });
   });
 
-  it("file rỗng hoặc quá 20 item bị từ chối", () => {
-    expect(parseItemsFile("name,price,category,url,quantity\n").ok).toBe(false);
-    const rows = Array.from({ length: 21 }, (_, i) => `I${i},100,Pokemon Center,https://a.jp,1`);
-    expect(parseItemsFile(["name,price,category,url,quantity", ...rows].join("\n")).ok).toBe(false);
+  it("file rỗng hoặc quá 100 item bị từ chối", () => {
+    const header = "name,price,category,url,quantity";
+    expect(parseItemsFile(`${header}\n`).ok).toBe(false);
+    const rows = Array.from({ length: 101 }, (_, i) => `I${i},100,Pokemon Center,https://a.jp,1`);
+    expect(parseItemsFile([header, ...rows].join("\n")).ok).toBe(false);
+    expect(parseItemsFile([header, ...rows.slice(0, 100)].join("\n")).ok).toBe(true);
   });
 });
